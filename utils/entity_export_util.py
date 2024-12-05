@@ -108,7 +108,6 @@ def generate_model_code(table_name, project_name, host, user, password, database
         # 生成 expose 类代码
         expose_class_code = f"""from typing import Optional
 from django.db import transaction
-from django.db.models import Model
 from TerminatorBaseCore.entity.exception import BusinessException
 from TerminatorBaseCore.entity.response import ServiceJsonResponse
 from TerminatorBaseCore.route.route import prefix, route
@@ -118,10 +117,8 @@ from {project_name}.entity.model.{table_name.lower()} import {class_name}
 
 
 @prefix('api/v1/{table_name}')
-class {class_name}Expose(CustomRouterViewSet, BaseCompomentHandler):
-    @property
-    def model(self) -> Optional[Model]:
-        return {class_name}
+class {class_name}Expose(CustomRouterViewSet, BaseCompomentHandler[{class_name}]):
+    pass
 """
 
         # 保存 expose 文件
@@ -132,15 +129,12 @@ class {class_name}Expose(CustomRouterViewSet, BaseCompomentHandler):
 
         # 生成 service 类代码
         service_class_code = f"""from typing import Optional
-from django.db.models import Model
 from {project_name}.entity.model.{table_name.lower()} import {class_name}
 from TerminatorBaseCore.service.base_service_handler import BaseServiceHandler
 
 
 class {class_name}Service(BaseServiceHandler[{class_name}]):
-    @property
-    def _model(self) -> Optional[Model]:
-        return {class_name}
+    pass
 """
 
         # 保存 service 文件

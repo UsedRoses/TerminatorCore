@@ -1,22 +1,24 @@
 import random
 import string
 import os
-from jose import jwt, JWTError, ExpiredSignatureError
 import time
 from django_redis import get_redis_connection
-from django.conf import settings
+import jwt
+from jwt import PyJWTError, ExpiredSignatureError
+from TerminatorBaseCore.entity.design_patterns import Singleton
 
 
-class TokenManager:
+class TokenManager(Singleton):
 
     def __init__(self):
-        self.redis_client = get_redis_connection("default")
-        self.token_lifetime = 3 * 24 * 3600  # token 的有效期为 3 天
-        self.max_token_lifetime = 20 * 24 * 3600  # 强制失效时间为 20 天
-        self.last_check_interval = 3600  # 每小时检查一次
-        self.secret_key = os.getenv("DJANGO_SECRET_KEY", "18xn21fj23plg24zf")
-        self.project_name = os.getenv("DJANGO_PROJECT_NAME", "Terminator_Project")
-        self.algorithm = "HS256"
+        if not hasattr(self, 'redis_client'):
+            self.redis_client = get_redis_connection("default")
+            self.token_lifetime = 3 * 24 * 3600  # token 的有效期为 3 天
+            self.max_token_lifetime = 20 * 24 * 3600  # 强制失效时间为 20 天
+            self.last_check_interval = 3600  # 每小时检查一次
+            self.secret_key = os.getenv("DJANGO_SECRET_KEY", "18xn21fj23plg24zf")
+            self.project_name = os.getenv("DJANGO_PROJECT_NAME", "Terminator_Project")
+            self.algorithm = "HS256"
 
     def generate_token(self, user_id, email: str):
         """生成带有用户信息和最近验证时间的 JWT token"""
@@ -53,7 +55,7 @@ class TokenManager:
         try:
             payload = jwt.decode(token, self.secret_key, algorithms=[self.algorithm], options={"verify_exp": False})
             return payload
-        except JWTError:
+        except PyJWTError:
             return None
 
     def verify_token(self, token):
@@ -108,7 +110,7 @@ class TokenManager:
         except ExpiredSignatureError:
             print("Token Expired")
             return False, None, None, None
-        except JWTError:
+        except PyJWTError:
             print("Token JWTError")
             return False, None, None, None
 

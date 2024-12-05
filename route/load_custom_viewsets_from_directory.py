@@ -1,6 +1,5 @@
 import os
 import importlib
-from django.urls import path
 from TerminatorBaseCore.route.viewset import CustomRouterViewSet
 
 

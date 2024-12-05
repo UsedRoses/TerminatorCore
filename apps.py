@@ -32,12 +32,17 @@ class TerminatorBaseCoreConfig(AppConfig):
         if 'TerminatorBaseCore.middleware.exception_middleware.ExceptionHandlingMiddleware' not in settings.MIDDLEWARE:
             settings.MIDDLEWARE.append('TerminatorBaseCore.middleware.exception_middleware.ExceptionHandlingMiddleware')
 
-
         # 暴露自定义响应头，允许前端访问这些头信息
         if not hasattr(settings, 'CORS_EXPOSE_HEADERS'):
             settings.CORS_EXPOSE_HEADERS = []
 
         settings.CORS_EXPOSE_HEADERS.append("X-Token")
 
+        if not hasattr(settings, 'REST_FRAMEWORK'):
+            settings.REST_FRAMEWORK = {
+                'DEFAULT_RENDERER_CLASSES': (
+                    'rest_framework.renderers.JSONRenderer',  # 只使用 JSON 渲染器
+                ),
+            }
 
 

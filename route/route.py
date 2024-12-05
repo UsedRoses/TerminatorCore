@@ -1,4 +1,3 @@
-from functools import wraps
 from typing import Optional
 
 from django.conf import settings
@@ -7,7 +6,8 @@ from django.conf import settings
 route_patterns = []
 
 
-def prefix(url_prefix: str, permission_path: Optional[str] = settings.PERMISSION_PATH):
+def prefix(url_prefix: str, permission_path: Optional[str] = None):
+    permission_path = getattr(settings, 'PERMISSION_PATH', None) if permission_path is None else permission_path
     """
     类装饰器，用于为 ViewSet 类添加统一的 URL 前缀。
     """
