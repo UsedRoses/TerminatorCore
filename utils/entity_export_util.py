@@ -1,6 +1,8 @@
 import pymysql
 import os
 
+from TerminatorBaseCore.utils.redis_mq_util import Producer
+
 # 定义字段类型映射表
 FIELD_TYPE_MAP = {
     'int': 'IntegerField',
@@ -116,7 +118,7 @@ from TerminatorBaseCore.service.base_compoment_handler import BaseCompomentHandl
 from {project_name}.entity.model.{table_name.lower()} import {class_name}
 
 
-@prefix('api/v1/{table_name}')
+@prefix('api/{table_name}')
 class {class_name}Expose(CustomRouterViewSet, BaseCompomentHandler[{class_name}]):
     pass
 """
@@ -152,4 +154,4 @@ if __name__ == "__main__":
     table_name = 'track_type'
     model_code = generate_model_code(table_name, 'ProjectD', 'localhost', 'root', 'root', 'music_demo')
 
-
+    Producer().setTopic("TEST").setMessage(message_body={}, key="11").send()

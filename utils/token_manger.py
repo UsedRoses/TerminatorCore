@@ -2,6 +2,8 @@ import random
 import string
 import os
 import time
+
+from django.conf import settings
 from django_redis import get_redis_connection
 import jwt
 from jwt import PyJWTError, ExpiredSignatureError
@@ -16,8 +18,8 @@ class TokenManager(Singleton):
             self.token_lifetime = 3 * 24 * 3600  # token 的有效期为 3 天
             self.max_token_lifetime = 20 * 24 * 3600  # 强制失效时间为 20 天
             self.last_check_interval = 3600  # 每小时检查一次
-            self.secret_key = os.getenv("DJANGO_SECRET_KEY", "18xn21fj23plg24zf")
-            self.project_name = os.getenv("DJANGO_PROJECT_NAME", "Terminator_Project")
+            self.secret_key = getattr(settings, 'TOKEN_SECRET_KEY', "18xn21fj23plg24zf")
+            self.project_name = getattr(settings, 'PROJECT_NAME', "T800")
             self.algorithm = "HS256"
 
     def generate_token(self, user_id, email: str):
