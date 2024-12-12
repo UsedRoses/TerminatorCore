@@ -1,7 +1,6 @@
 import pymysql
 import os
 
-from TerminatorBaseCore.utils.redis_mq_util import Producer
 
 # 定义字段类型映射表
 FIELD_TYPE_MAP = {
@@ -153,5 +152,3 @@ if __name__ == "__main__":
     # 指定表名
     table_name = 'track_type'
     model_code = generate_model_code(table_name, 'ProjectD', 'localhost', 'root', 'root', 'music_demo')
-
-    Producer().setTopic("TEST").setMessage(message_body={}, key="11").send()

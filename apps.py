@@ -1,9 +1,9 @@
+from pathlib import Path
 from django.apps import AppConfig
 from django.conf import settings
 import logging
 import importlib
 import inspect
-from TerminatorBaseCore.utils.redis_mq_util import RedisConsumer
 
 
 class TerminatorBaseCoreConfig(AppConfig):
@@ -48,46 +48,14 @@ class TerminatorBaseCoreConfig(AppConfig):
                 ),
             }
 
-def start_consumers():
-    # 获取所有子类
-    consumer_classes = []
+        project_name = getattr(settings, "PROJECT_NAME", None)
+        if project_name:
+            from django.apps import apps
+            from TerminatorBaseCore.components.import_scan import ImportScan
+            scan = ImportScan()
+            # 获取所有已注册的 app
+            for app_config in apps.get_app_configs():
+                if app_config.name == project_name:
+                    app_path = Path(app_config.path)
+                    scan.scan_modules(app_path, app_config.name)
 
-    # 查找项目中的所有子类实现
-    for app in settings.INSTALLED_APPS:
-        if app.startswith("django"):
-            continue
-        if app == 'TerminatorBaseCore':
-            continue
-
-        # 动态导入应用中的模块
-        try:
-            module = importlib.import_module(f"{app}.consumers")
-        except ModuleNotFoundError:
-            continue
-
-            # 查找所有继承自 RedisConsumer 的子类
-        for name, obj in inspect.getmembers(module, inspect.isclass):
-            if issubclass(obj, RedisConsumer) and obj is not RedisConsumer:
-                consumer_classes.append(obj)
-
-        # 启动所有消费者
-        for consumer_class in consumer_classes:
-            consumer_instance = consumer_class()
-            consumer_instance.consume()
-
-    # 如果有消费者,则启动死信队列
-    if consumer_classes:
-        # 动态导入应用中的模块
-        try:
-            module = importlib.import_module("TerminatorBaseCore.consumers")
-        except ModuleNotFoundError:
-            return
-
-        t_consumer_classes = []
-        for name, obj in inspect.getmembers(module, inspect.isclass):
-            if issubclass(obj, RedisConsumer) and obj is not RedisConsumer:
-                t_consumer_classes.append(obj)
-
-        for consumer_class in t_consumer_classes:
-            consumer_instance = consumer_class()
-            consumer_instance.consume()

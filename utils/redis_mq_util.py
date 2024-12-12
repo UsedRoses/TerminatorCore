@@ -8,6 +8,7 @@ import json
 
 from TerminatorBaseCore.common.constant import Dead_Letter_Queue
 from TerminatorBaseCore.common.error_code import ERROR_CODE
+from TerminatorBaseCore.components.consumer_register import _register_consumer
 from TerminatorBaseCore.entity.exception import ServiceException
 from TerminatorBaseCore.entity.message import MessageRecord
 from TerminatorBaseCore.utils.ip_util import get_ipv4_to_int
@@ -138,13 +139,18 @@ class RedisConsumer(ABC):
             # Redis 未安装或不可用
             self._redis_available = False
 
+    def __init_subclass__(cls, **kwargs):
+        """动态注册子类"""
+        super().__init_subclass__(**kwargs)
+        _register_consumer(cls)
+
     @property
     @abstractmethod
     def topic(self) -> str:
         return ''
 
     @abstractmethod
-    def process_message(self, key: str, message):
+    def process_message(self, key: str, message, call_back=None):
         """
         开发者必须实现这个方法来处理消息
         """
@@ -164,6 +170,7 @@ class RedisConsumer(ABC):
                 message_id = message_data.get("id", 0)
                 key = message_data.get("key", None)
                 message_body_ori = message_data.get("message_body", '')
+                call_back = message_data.get("call_back", None)
 
                 message_body = try_parse_json(message_body_ori)
 
@@ -174,7 +181,7 @@ class RedisConsumer(ABC):
                     message_record.consumer_ip = get_ipv4_to_int()
                 try:
                     with transaction.atomic():
-                        self.process_message(key, message_body)
+                        self.process_message(key, message_body, call_back)
 
                     if message_record:
                         message_record.status = MessageRecord.Status.SUCCESS
@@ -188,7 +195,9 @@ class RedisConsumer(ABC):
                         if message_record.consume_attempts < 3:
                             delay = message_record.consume_attempts * 60
                             # 重试
-                            RedisProducer().setTopic(Dead_Letter_Queue).setMessage(message_body_ori, key).send_delay(delay)
+                            message_data.update({"call_back": self.topic})
+                            dead_message = json.dumps(message_data)
+                            RedisProducer().setTopic(Dead_Letter_Queue).setMessage(dead_message, key).send_delay(delay)
                         else:
                             message_record.status = MessageRecord.Status.FAILED
                         message_record.save()
@@ -197,6 +206,10 @@ class RedisConsumer(ABC):
 
 
 class RedisDelayConsumer(ABC):
+    """
+    暂未实现重试机制,也为对此类的子类进行注册
+    实现重试机制后
+    """
 
     def __init__(self):
         try:
@@ -209,13 +222,18 @@ class RedisDelayConsumer(ABC):
             # Redis 未安装或不可用
             self._redis_available = False
 
+    def __init_subclass__(cls, **kwargs):
+        """动态注册子类"""
+        super().__init_subclass__(**kwargs)
+        _register_consumer(cls)
+
     @property
     @abstractmethod
     def topic(self) -> str:
         return ''
 
     @abstractmethod
-    def process_message(self, key: str, message):
+    def process_message(self, key: str, message, call_back=None):
         """
         开发者必须实现这个方法来处理消息
         """
@@ -239,6 +257,7 @@ class RedisDelayConsumer(ABC):
                 message_id = message_data.get("id", 0)
                 key = message_data.get("key", None)
                 message_body_ori = message_data.get("message_body", '')
+                call_back = message_data.get("call_back", None)
 
                 message_body = try_parse_json(message_body_ori)
 
@@ -249,7 +268,7 @@ class RedisDelayConsumer(ABC):
                     message_record.consumer_ip = get_ipv4_to_int()
                 try:
                     with transaction.atomic():
-                        self.process_message(key, message_body)
+                        self.process_message(key, message_body, call_back)
 
                     if message_record:
                         message_record.status = MessageRecord.Status.SUCCESS
@@ -263,7 +282,9 @@ class RedisDelayConsumer(ABC):
                         if message_record.consume_attempts < 3:
                             delay = message_record.consume_attempts * 60
                             # 重试
-                            RedisProducer().setTopic(Dead_Letter_Queue).setMessage(message_body_ori, key).send_delay(delay)
+                            message_data.update({"call_back": self.__name__})
+                            dead_message = json.dumps(message_data)
+                            RedisProducer().setTopic(Dead_Letter_Queue).setMessage(dead_message, key).send_delay(delay)
                         else:
                             message_record.status = MessageRecord.Status.FAILED
                         message_record.save()

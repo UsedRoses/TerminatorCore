@@ -1,6 +1,8 @@
 import socket
 import struct
 
+from rest_framework.request import Request
+
 
 def get_ipv4():
     # 获取当前机器的主机名
@@ -17,3 +19,11 @@ def get_ipv4_to_int():
     # 将 IPv4 地址字符串转换为整数
     return struct.unpack("!I", socket.inet_aton(ip))[0]
 
+
+def get_client_ip(request: Request):
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded_for:
+        ip = x_forwarded_for.split(',')[0]
+    else:
+        ip = request.META.get('REMOTE_ADDR', '0.0.0.0')  # 设置默认值
+    return ip
