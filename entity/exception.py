@@ -27,3 +27,12 @@ class InfoException(Exception):
         self.message = message
         self.code = code
 
+
+class SysException(Exception):
+    """
+    系统级别的异常,返回错误状态码
+    """
+    def __init__(self, message, status_code: int = 530):
+        self.message = message
+        self.status_code = status_code
+

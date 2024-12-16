@@ -63,3 +63,12 @@ class ExceptionAfterHandle(HandleRegister):
         """动态注册子类"""
         super().__init_subclass__(**kwargs)
         HandleRegister.set_subclasses(cls.AfterHandleName, cls)
+
+
+class SysExceptionAfterHandle(HandleRegister):
+    AfterHandleName = "SysExceptionAfter"
+
+    def __init_subclass__(cls, **kwargs):
+        """动态注册子类"""
+        super().__init_subclass__(**kwargs)
+        HandleRegister.set_subclasses(cls.AfterHandleName, cls)
