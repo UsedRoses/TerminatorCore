@@ -117,7 +117,7 @@ def rate_limit(limit, refill_rate, freq_threshold, key_params=None):
                     if isinstance(arg, Request):
                         request = args[1]
                         # 默认使用请求IP限流
-                        limit_key = limit_key + '_' + get_client_ip(request)
+                        limit_key = limit_key + ':' + get_client_ip(request)
 
             check_rate_limit(limit_key, limit, refill_rate, freq_threshold)
             # 执行被装饰的函数

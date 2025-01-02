@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-
+import uuid
 import redis
 import threading
 from typing import Callable, Dict
@@ -34,7 +34,7 @@ class RedisBaseConsumer(ABC, Singleton):
         raise NotImplementedError("Subclasses must implement this method")
 
 
-def process_pending_messages(topic: str, group_name: str, consumer_cls: Callable, retry_threshold: int = 3):
+def process_pending_messages(topic: str, group_name: str, consumer_cls: Callable, retry_threshold: int = 5):
     """
     定期处理未确认的消息
     """
@@ -69,8 +69,8 @@ def process_pending_messages(topic: str, group_name: str, consumer_cls: Callable
         except Exception as e:
             print(f"Error in pending message processing for topic {topic}: {e}")
 
-        # 每隔 60 秒检查一次
-        threading.Event().wait(60)
+        # 每隔 3*60 秒检查一次
+        threading.Event().wait(3 * 60)
 
 
 # 消费者运行逻辑
@@ -79,7 +79,7 @@ def run_consumer(topic: str, consumer_cls: Callable):
     消费者运行逻辑，只处理新消息
     """
     group_name = f"{topic}_group"
-    consumer_name = f"{topic}_consumer"
+    consumer_name = f"{topic}_consumer_{threading.current_thread().name}_{uuid.uuid4().hex}"
 
     # 确保消费组存在
     try:
