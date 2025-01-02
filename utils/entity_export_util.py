@@ -50,7 +50,7 @@ def generate_model_code(table_name, project_name, host, user, password, database
     table_comment = table_info[-1] if table_info else ''
 
     class_name = snake_to_camel(table_name)
-    model_code = f"from django.db import models\n\n\nclass {class_name}(models.Model):\n"
+    model_code = f"from django.db import models\nfrom django.utils import timezone\n\n\nclass {class_name}(models.Model):\n"
 
     for column in columns:
         field_name = column[0]
@@ -66,6 +66,10 @@ def generate_model_code(table_name, project_name, host, user, password, database
         if is_primary:
             field_type = 'AutoField' if 'int' in sql_type else field_type
             field_args.append("primary_key=True")
+        elif column == 'created_at':
+            field_args.append(f"default=timezone.now")
+        elif column == 'updated_at':
+            field_args.append(f"auto_now=True")
         elif default is not None:
             if isinstance(default, str):
                 field_args.append(f"default='{default}'")
@@ -102,7 +106,7 @@ def generate_model_code(table_name, project_name, host, user, password, database
     # 将生成的代码保存到 Python 文件
     file_name = os.path.join(download_dir, f"{table_name.lower()}.py")
 
-    with open(file_name, 'w') as model_file:
+    with open(file_name, 'w', encoding="UTF-8") as model_file:
         model_file.write(model_code)
         print(f"Generated {file_name}")
 
@@ -124,7 +128,7 @@ class {class_name}Expose(CustomRouterViewSet, BaseCompomentHandler[{class_name}]
 
         # 保存 expose 文件
         expose_file_name = os.path.join(download_dir, f"{table_name.lower()}_expose.py")
-        with open(expose_file_name, 'w') as expose_file:
+        with open(expose_file_name, 'w', encoding="UTF-8") as expose_file:
             expose_file.write(expose_class_code)
             print(f"Generated {expose_file_name}")
 
@@ -140,7 +144,7 @@ class {class_name}Service(BaseServiceHandler[{class_name}]):
 
         # 保存 service 文件
         service_file_name = os.path.join(download_dir, f"{table_name.lower()}_service.py")
-        with open(service_file_name, 'w') as service_file:
+        with open(service_file_name, 'w', encoding="UTF-8") as service_file:
             service_file.write(service_class_code)
             print(f"Generated {service_file_name}")
 
@@ -150,5 +154,5 @@ class {class_name}Service(BaseServiceHandler[{class_name}]):
 if __name__ == "__main__":
     # 提示用户输入数据库配置
     # 指定表名
-    table_name = 'track_type'
-    model_code = generate_model_code(table_name, 'ProjectD', 'localhost', 'root', 'root', 'music_demo')
+    table_name = 'transaction'
+    model_code = generate_model_code(table_name, 'kodecrypto', 'localhost', 'root', 'root', 'kodecrypto')

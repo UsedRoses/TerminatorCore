@@ -1,7 +1,6 @@
 import traceback
 import os
 from django.http import JsonResponse
-from django.utils.deprecation import MiddlewareMixin
 from TerminatorBaseCore.common.error_code import ERROR_CODE, SUCCESS_CODE
 from TerminatorBaseCore.components.dynamic_call import HandleRegister, BusinessExceptionAfterHandle, \
     ServiceExceptionAfterHandle, InfoExceptionAfterHandle, ExceptionAfterHandle, SysExceptionAfterHandle
@@ -9,7 +8,15 @@ from TerminatorBaseCore.entity.exception import BusinessException, InfoException
 from TerminatorBaseCore.entity.response import ServiceJsonResponse
 
 
-class ExceptionHandlingMiddleware(MiddlewareMixin):
+class ExceptionHandlingMiddleware:
+    def __init__(self, get_response):
+        # 这个方法在每次请求时只会被调用一次，通常用于初始化配置
+        self.get_response = get_response
+
+    def __call__(self, request):
+        # 通过 get_response 传递给下一个中间件或视图
+        response = self.get_response(request)
+        return response
 
     def process_exception(self, request, exception):
         if isinstance(exception, BusinessException):
@@ -17,15 +24,18 @@ class ExceptionHandlingMiddleware(MiddlewareMixin):
             HandleRegister.instance_and_execute(BusinessExceptionAfterHandle.AfterHandleName, request,
                                                 message=exception.message)
             return ServiceJsonResponse(error_code, exception.message)
+
         elif isinstance(exception, ServiceException):
             stack_info = log_exception_with_stack(exception)
             HandleRegister.instance_and_execute(ServiceExceptionAfterHandle.AfterHandleName, request,
                                                 message=exception.message, stack_info=stack_info)
             return ServiceJsonResponse(ERROR_CODE, exception.message)
+
         elif isinstance(exception, InfoException):
             HandleRegister.instance_and_execute(InfoExceptionAfterHandle.AfterHandleName, request,
                                                 message=exception.message)
             return ServiceJsonResponse(SUCCESS_CODE, exception.message)
+
         elif isinstance(exception, SysException):
             stack_info = log_exception_with_stack(exception)
             HandleRegister.instance_and_execute(SysExceptionAfterHandle.AfterHandleName, request,
@@ -34,6 +44,7 @@ class ExceptionHandlingMiddleware(MiddlewareMixin):
                 {"detail": exception.message},
                 status=exception.status_code
             )
+
         elif isinstance(exception, Exception):
             stack_info = log_exception_with_stack(exception)
             HandleRegister.instance_and_execute(ExceptionAfterHandle.AfterHandleName, request,

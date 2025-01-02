@@ -3,7 +3,6 @@ import importlib
 import inspect
 
 from TerminatorBaseCore.components.dynamic_call import HandleRegister
-from TerminatorBaseCore.utils.redis_mq_util import RedisConsumer, RedisDelayConsumer
 
 # 已加载的模块集合，避免重复加载
 loaded_modules = set()
@@ -53,8 +52,4 @@ class ImportScan:
         """
         for name, obj in inspect.getmembers(module, inspect.isclass):
             if issubclass(obj, HandleRegister) and obj is not HandleRegister:  # 过滤掉 A 自身
-                self.discovered_classes.append(obj)
-            elif issubclass(obj, RedisConsumer) and obj is not RedisConsumer:
-                self.discovered_classes.append(obj)
-            elif issubclass(obj, RedisDelayConsumer) and obj is not RedisDelayConsumer:
                 self.discovered_classes.append(obj)
