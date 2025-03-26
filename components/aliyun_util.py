@@ -11,7 +11,7 @@ def get_access_key():
             content = f.read()
             access_key_id, access_key_secret = content.split('\n')[0:2]
     except Exception as e:
-        access_key_id = "LTAI5tSBGyaBxbCmnBRPNKG9"
-        access_key_secret = "PIc8HNGu8ANknf9MDnh8ifA3uV0P98"
+        access_key_id = "your key_id"
+        access_key_secret = "your key_secret"
     finally:
         return access_key_id, access_key_secret
