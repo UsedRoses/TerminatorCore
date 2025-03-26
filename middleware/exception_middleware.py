@@ -52,8 +52,6 @@ class ExceptionHandlingMiddleware:
             return ServiceJsonResponse(ERROR_CODE, str(exception))
 
 
-PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
-
 
 def log_exception_with_stack(exception):
     """

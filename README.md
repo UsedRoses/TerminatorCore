@@ -29,15 +29,12 @@ urlpatterns = [
 from TerminatorBaseCore.utils.entity_export_util import generate_model_code
 
 if __name__ == '__main__':
-    generate_model_code('uploadfile_image', 'my_project', 'localhost', 'root', 'root', 'test_demo')
+    generate_model_code('uploadfile_image', 'project_env')
 ```
 这里generate_model_code有以下参数  
 table_name  数据库表名  
-project_name  项目名称  
-host  数据库地址  
-user  数据库账号  
-password  数据库密码  
-database  数据库
+project_name  配置项  
+
 
 **生成器会在**___系统文档___**中生成model,expose,service文件,然后将文件复制到项目对应目录下即可**
 
@@ -61,4 +58,71 @@ def user_login(request):
     request.new_token = token
 
     # token随请求头的Authorization传递
+```
+
+# 功能二
+自定义异常处理方案
+
+```python
+import time
+import json
+from TerminatorBaseCore.components.dynamic_call import ServiceExceptionAfterHandle, InfoExceptionAfterHandle, ExceptionAfterHandle
+from TerminatorBaseCore.components.logger_util import api_log
+
+
+class ServiceExceptionAfter(ServiceExceptionAfterHandle):
+    def execute(self, *arg, **keyword):
+        request = arg[0]
+        error_msg = keyword.get("message", None)
+        stack_info = keyword.get("stack_info", None)
+        logging(request, error_msg, stack_info)
+
+
+class InfoExceptionAfter(InfoExceptionAfterHandle):
+    def execute(self, *arg, **keyword):
+        request = arg[0]
+        error_msg = keyword.get("message", None)
+        logging(request, error_msg)
+
+
+class ExceptionAfter(ExceptionAfterHandle):
+    def execute(self, *arg, **keyword):
+        request = arg[0]
+        error_msg = keyword.get("message", None)
+        stack_info = keyword.get("stack_info", None)
+        logging(request, error_msg, stack_info, "error")
+
+
+def logging(request, error_msg, stack_info=None, level="warning"):
+    path = request.path
+    headers = request.headers
+    method = request.method
+
+    log_data = {
+        "method": method,
+        "path_url": path,
+        "error_msg": error_msg,
+        "date_time": time.time(),
+        "head": dict(headers)
+    }
+
+    if method == 'GET':
+        query = request.GET
+    else:
+        query = request.POST
+
+    if query:
+        log_data.update({
+            "query": json.dumps(query.dict())
+        })
+
+    if stack_info:
+        log_data.update({
+            "stack_info": stack_info
+        })
+
+    if level == "error":
+        api_log.error(log_data)
+    else:
+        api_log.warning(log_data)
 ```

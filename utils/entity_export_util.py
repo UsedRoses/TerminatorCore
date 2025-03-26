@@ -1,7 +1,6 @@
 import pymysql
 import os
 
-
 # 定义字段类型映射表
 FIELD_TYPE_MAP = {
     'int': 'IntegerField',
@@ -28,8 +27,17 @@ def snake_to_camel(name):
     return ''.join(word.capitalize() for word in name.split('_'))
 
 
-def generate_model_code(table_name, project_name, host, user, password, database):
+def generate_model_code(table_name, django_env: str):
     """根据表结构生成 Django 模型代码"""
+    os.environ['DJANGO_ENV'] = django_env
+
+    from DjangoProject import settings
+    project_name = settings.PROJECT_NAME
+
+    host = settings.DATABASES['default']['HOST']
+    user = settings.DATABASES['default']['USER']
+    password = settings.DATABASES['default']['PASSWORD']
+    database = settings.DATABASES['default']['NAME']
 
     # 连接数据库
     connection = pymysql.connect(
@@ -41,6 +49,9 @@ def generate_model_code(table_name, project_name, host, user, password, database
     )
     cursor = connection.cursor()
 
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    PROJECT_ROOT = os.path.dirname(BASE_DIR)
+    PROJECT_ROOT = os.path.dirname(PROJECT_ROOT)
 
     cursor.execute(f"DESCRIBE {table_name}")
     columns = cursor.fetchall()
@@ -79,6 +90,12 @@ def generate_model_code(table_name, project_name, host, user, password, database
         if field_type == 'CharField' and 'varchar' in sql_type:
             max_length = int(sql_type[sql_type.find('(') + 1:sql_type.find(')')])
             field_args.append(f"max_length={max_length}")
+        elif field_type == 'DecimalField' and 'decimal' in sql_type:
+            # 解析 max_digits 和 decimal_places
+            digits_info = sql_type[sql_type.find('(') + 1:sql_type.find(')')].split(',')
+            max_digits = digits_info[0].strip()
+            decimal_places = digits_info[1].strip()
+            field_args.append(f"max_digits={max_digits}, decimal_places={decimal_places}")
 
         if not is_primary and is_nullable:
             field_args.append("null=True")
@@ -102,7 +119,8 @@ def generate_model_code(table_name, project_name, host, user, password, database
 
     print(model_code)
 
-    download_dir = os.path.join(os.path.expanduser("~"), "Documents")
+    download_dir = os.path.join(PROJECT_ROOT, f'{project_name}\\entity\\model')
+    # download_dir = os.path.join(os.path.expanduser("~"), "Documents")
     # 将生成的代码保存到 Python 文件
     file_name = os.path.join(download_dir, f"{table_name.lower()}.py")
 
@@ -127,6 +145,7 @@ class {class_name}Expose(CustomRouterViewSet, BaseCompomentHandler[{class_name}]
 """
 
         # 保存 expose 文件
+        download_dir = os.path.join(PROJECT_ROOT, f'{project_name}\\expose')
         expose_file_name = os.path.join(download_dir, f"{table_name.lower()}_expose.py")
         with open(expose_file_name, 'w', encoding="UTF-8") as expose_file:
             expose_file.write(expose_class_code)
@@ -143,6 +162,7 @@ class {class_name}Service(BaseServiceHandler[{class_name}]):
 """
 
         # 保存 service 文件
+        download_dir = os.path.join(PROJECT_ROOT, f'{project_name}\\service')
         service_file_name = os.path.join(download_dir, f"{table_name.lower()}_service.py")
         with open(service_file_name, 'w', encoding="UTF-8") as service_file:
             service_file.write(service_class_code)
@@ -154,5 +174,4 @@ class {class_name}Service(BaseServiceHandler[{class_name}]):
 if __name__ == "__main__":
     # 提示用户输入数据库配置
     # 指定表名
-    table_name = 'transaction'
-    model_code = generate_model_code(table_name, 'kodecrypto', 'localhost', 'root', 'root', 'kodecrypto')
+    generate_model_code('token_orders', 'development')
