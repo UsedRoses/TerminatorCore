@@ -133,7 +133,7 @@ def generate_model_code(table_name, django_env: str):
 from django.db import transaction
 from TerminatorBaseCore.entity.exception import BusinessException
 from TerminatorBaseCore.entity.response import ServiceJsonResponse
-from TerminatorBaseCore.route.route import prefix, route
+from TerminatorBaseCore.route.route import prefix, route, Method
 from TerminatorBaseCore.route.viewset import CustomRouterViewSet
 from TerminatorBaseCore.service.base_compoment_handler import BaseCompomentHandler
 from {project_name}.entity.model.{table_name.lower()} import {class_name}

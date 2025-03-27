@@ -8,7 +8,7 @@ from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 
 from TerminatorBaseCore.common.error_code import ERROR_CODE, SUCCESS_MSG, SUCCESS_CODE
-from TerminatorBaseCore.route.route import route
+from TerminatorBaseCore.route.route import route, Method
 
 T = TypeVar('T', bound=Model)
 
@@ -69,7 +69,7 @@ class BaseCompomentHandler(Generic[T]):
         except self.model.DoesNotExist:
             return None
 
-    @route("retrieve")
+    @route("retrieve", methods=[Method.GET])
     def retrieve(self, request):
         """获取单个对象详情"""
         obj = self.get_object(request.query_params.get(self.key_field_name))
@@ -79,7 +79,7 @@ class BaseCompomentHandler(Generic[T]):
         serializer = self.serializer_class(obj)
         return Response(serializer.data)
 
-    @route("create", methods=['post'])
+    @route("create", methods=[Method.POST])
     def create(self, request):
         """创建对象"""
         serializer = self.serializer_class(data=request.data)
@@ -87,7 +87,7 @@ class BaseCompomentHandler(Generic[T]):
         serializer.save()
         return Response({'code': ERROR_CODE, 'message': SUCCESS_MSG, 'data': serializer.data}, status=status.HTTP_201_CREATED)
 
-    @route("update", methods=['post'])
+    @route("update", methods=[Method.POST])
     def update(self, request):
         """更新对象"""
         obj = self.get_object(request.data.get(self.key_field_name))
@@ -99,7 +99,7 @@ class BaseCompomentHandler(Generic[T]):
         serializer.save()
         return Response({'code': ERROR_CODE, 'message': SUCCESS_MSG, 'data': serializer.data}, status=status.HTTP_200_OK)
 
-    @route("remove", methods=['post'])
+    @route("remove", methods=[Method.POST])
     def soft_delete(self, request):
         """逻辑删除对象（仅当模型具有逻辑删除字段时有效）"""
         obj = self.get_object(request.data.get(self.key_field_name))
@@ -114,7 +114,7 @@ class BaseCompomentHandler(Generic[T]):
             return Response({'code': ERROR_CODE, 'message': 'Logical delete not supported on this model.'},
                             status=status.HTTP_400_BAD_REQUEST)
 
-    @route("delete", methods=['post'])
+    @route("delete", methods=[Method.POST])
     def destroy(self, request):
         """硬删除对象"""
         obj = self.get_object(request.data.get(self.key_field_name))
@@ -124,7 +124,7 @@ class BaseCompomentHandler(Generic[T]):
         obj.delete()
         return Response({'code': SUCCESS_CODE, 'message': SUCCESS_MSG}, status=status.HTTP_204_NO_CONTENT)
 
-    @route("search", methods=['post'])
+    @route("search", methods=[Method.POST])
     def search(self, request):
         """根据传入条件执行复杂查询"""
         queryset = self.queryset
